@@ -197,7 +197,7 @@ for bi in range(kpbin):
 # plt.colorbar()
 # plt.subplot(122)
 # im1 = 1000 * Pkkd.T[nf/2:, :] # mK
-# plt.imshow(im, origin='lower', aspect='auto', interpolation='nearest', vmax=100)
+# plt.imshow(im1, origin='lower', aspect='auto', interpolation='nearest', vmax=100)
 # plt.colorbar()
 # plt.savefig(out_dir + 'Pkkd_decomp.png')
 # plt.close()
