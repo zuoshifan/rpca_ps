@@ -188,19 +188,35 @@ for bi in range(kpbin):
     Pkk_input[bi] = cmf.real
     Pkkd_input[bi] = np.diag(cmf.real)
 
-# # plot Pkkd and Pkkd_input
-# plt.figure()
-# plt.subplot(121)
-# # times 1000 to mK
-# im = 1000 * Pkkd_input.T[nf/2:, :] # mK
-# plt.imshow(im, origin='lower', aspect='auto', interpolation='nearest', vmax=100)
-# plt.colorbar()
-# plt.subplot(122)
-# im1 = 1000 * Pkkd.T[nf/2:, :] # mK
-# plt.imshow(im1, origin='lower', aspect='auto', interpolation='nearest', vmax=100)
-# plt.colorbar()
-# plt.savefig(out_dir + 'Pkkd_decomp.png')
-# plt.close()
+extent = [k_perps[0], k_perps[-1], k_paras[0], k_paras[-1]]
+# plot Pkkd and Pkkd_input
+plt.figure()
+plt.subplot(121)
+# times 1000 to mK
+im = 1000 * Pkkd_input.T[nf/2:, :] # mK
+plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
+plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
+plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+plt.colorbar()
+plt.subplot(122)
+im1 = 1000 * Pkkd.T[nf/2:, :] # mK
+plt.imshow(im1, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
+plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
+plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+plt.colorbar()
+plt.savefig(out_dir + 'Pkkd_decomp.png')
+plt.close()
+
+# plot Pkkd only
+plt.figure()
+# times 1000 to mK
+im = 1000 * Pkkd.T[nf/2:, :] # mK
+plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
+plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
+plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+plt.colorbar()
+plt.savefig(out_dir + 'Pk2d_decomp.png')
+plt.close()
 
 
 # bin to get Pk
@@ -240,6 +256,6 @@ plt.loglog(ks, 1000 * ks**3 * Pk_input / (2 * np.pi**2), label='input')
 plt.loglog(ks, 1000 * ks**3 * Pk / (2 * np.pi**2), label='recovered')
 plt.legend()
 plt.xlabel(r'$k \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$\Delta (k)^2 \ (\rm{mK})$')
+plt.ylabel(r'$\Delta^2 (k) \ (\rm{mK})$')
 plt.savefig(out_dir + 'Pk_decomp.png')
 plt.close()

@@ -88,23 +88,36 @@ for l in range(0, lmax, 1):
     # L, S = ialm(tt_tt_corr, tol1=1.0e-10, tol2=1.0e-8, max_iter=2000)
 
     # SPCA decompose tt_tt_corr
-    if l <= 3:
-        L, S = decompose(tt_tt_corr.real, rank=l+1, tol=1.0e-14)
+    # use variable rank
+    if l <= 400:
+        rank = min(2*l+1, 4)
     else:
-        L, S = decompose(tt_tt_corr.real, rank=10, tol=1.0e-14)
-        # print matrix_rank(L), matrix_rank(S)
-        U, s, VT = la.svd(L)
-        # print np.diff(np.log10(s[:20]))
-        # print argrelmax(np.diff(np.log10(s[:20])))
-        rank = argrelmax(np.diff(np.log10(s[:20])))[0][0] + 1
-        # rank = min(6, rank)
-        L, S = decompose(tt_tt_corr.real, rank=rank, tol=1.0e-12)
+        rank = l / 100
+    L, S = decompose(tt_tt_corr.real, rank=rank, tol=1.0e-14)
+
+    # if l <= 3:
+    #     L, S = decompose(tt_tt_corr.real, rank=l+1, tol=1.0e-14)
+    # else:
+    #     L, S = decompose(tt_tt_corr.real, rank=10, tol=1.0e-14)
+    #     # print matrix_rank(L), matrix_rank(S)
+    #     U, s, VT = la.svd(L)
+    #     # print np.diff(np.log10(s[:20]))
+    #     # print argrelmax(np.diff(np.log10(s[:20])))
+    #     rank = argrelmax(np.diff(np.log10(s[:20])))[0][0] + 1
+    #     # rank = min(6, rank)
+    #     L, S = decompose(tt_tt_corr.real, rank=rank, tol=1.0e-12)
 
     print matrix_rank(L), matrix_rank(S)
 
     ls.append(l)
     cls_input.append(cm_cm_corr.real[cv, cv])
     cls.append(S[cv, cv])
+
+ls = np.array(ls)
+cls = np.array(cls)
+cls_input = np.array(cls_input)
+res = cls_input - cls # residual
+factor = ls * (ls+1) / (2*np.pi)
 
 # compute input cl
 # cl_input = healpy.anafast(cm_map[cv])
@@ -114,6 +127,7 @@ plt.figure()
 # plt.plot(ls, cl_input, label='input')
 plt.plot(ls, cls_input, label='input')
 plt.plot(ls, cls, label='recovered')
+plt.plot(ls, res, label='residual')
 plt.xlabel('$l$')
 plt.ylabel('$C_l$')
 plt.legend(loc='best')
@@ -123,16 +137,13 @@ plt.close()
 
 # plot cl
 plt.figure()
-ls = np.array(ls)
-cls = np.array(cls)
-cls_input = np.array(cls_input)
-factor = ls * (ls+1) / (2*np.pi)
 # plt.plot(ls, factor*cl_input, label='input')
 plt.plot(ls, factor*cls_input, label='input')
 plt.plot(ls, factor*cls, label='recovered')
+plt.plot(ls, factor*res, label='residual')
 plt.xlabel('$l$')
 plt.ylabel('$l (l + 1) C_l / 2 \pi$')
 plt.legend(loc='best')
-plt.ylim(0, 4.5e-8)
+plt.ylim(0, 2.0e-8)
 plt.savefig(out_dir + 'cl_norm_spca.png')
 plt.close()
