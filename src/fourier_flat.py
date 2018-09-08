@@ -89,6 +89,7 @@ kys = kys[nf/2]
 
 factor = 0.5
 kpbin = int(factor * np.sqrt((ny/2.0)**2 + (nx/2.0)**2)) # bin for k_perp
+print 'kpbin:', kpbin
 # only use the central freq ks to bin
 k_bins = np.linspace(0, (kpbin+2)/(kpbin+1)*np.sqrt(kxs[0]**2 + kys[0]**2), kpbin+1)
 k_perps = np.array([ (k_bins[i] + k_bins[i+1])/2 for i in range(kpbin) ])
@@ -146,17 +147,28 @@ for bi in range(kpbin):
     # L, S = ialm(map_corr, tol1=1.0e-9, tol2=1.0e-7, max_iter=2000, verbose=True)
 
     # SPCA decomposition map_corr
-    if nkp <= 5:
-        L, S = decompose(map_corr.real, rank=nkp, tol=1.0e-14)
+    if bi< 10:
+        rank = 4
+    elif bi < 20:
+        rank = 5
+    elif bi < 30:
+        rank = 6
     else:
-        L, S = decompose(map_corr.real, rank=10, tol=1.0e-14)
-        # print matrix_rank(L), matrix_rank(S)
-        U, s, VT = la.svd(L)
-        # print np.diff(np.log10(s[:20]))
-        # print argrelmax(np.diff(np.log10(s[:20])))
-        rank = argrelmax(np.diff(np.log10(s[:20])))[0][0] + 1
-        # rank = min(6, rank)
-        L, S = decompose(map_corr.real, rank=rank, tol=1.0e-12)
+        rank = 7
+    rank += 1
+    L, S = decompose(map_corr.real, rank=rank, tol=1.0e-14)
+
+    # if nkp <= 5:
+    #     L, S = decompose(map_corr.real, rank=nkp, tol=1.0e-14)
+    # else:
+    #     L, S = decompose(map_corr.real, rank=10, tol=1.0e-14)
+    #     # print matrix_rank(L), matrix_rank(S)
+    #     U, s, VT = la.svd(L)
+    #     # print np.diff(np.log10(s[:20]))
+    #     # print argrelmax(np.diff(np.log10(s[:20])))
+    #     rank = argrelmax(np.diff(np.log10(s[:20])))[0][0] + 1
+    #     # rank = min(6, rank)
+    #     L, S = decompose(map_corr.real, rank=rank, tol=1.0e-12)
     print matrix_rank(L), matrix_rank(S)
 
     # # plot decomp
