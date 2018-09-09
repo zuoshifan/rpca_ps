@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 conv_beam = config.conv_beam
 D = config.D
+nside = config.nside
 
 if conv_beam:
     # map_dir = '../results/conv_beam/conv_%.1f/' % D
@@ -30,9 +31,9 @@ else:
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-ps_alm_name = 'alm_pointsource_256_700_800_256.hdf5'
-ga_alm_name = 'alm_galaxy_256_700_800_256.hdf5'
-cm_alm_name = 'alm_21cm_256_700_800_256.hdf5'
+ps_alm_name = 'alm_pointsource_%d_700_800_256.hdf5' % nside
+ga_alm_name = 'alm_galaxy_%d_700_800_256.hdf5' % nside
+cm_alm_name = 'alm_21cm_%d_700_800_256.hdf5' % nside
 
 # with h5py.File(map_dir+cm_name, 'r') as f:
 #     if len(f['map'].shape) == 3:
@@ -114,8 +115,8 @@ for l in range(0, lmax, 1):
     cls.append(S[cv, cv])
 
 ls = np.array(ls)
-cls = np.array(cls)
-cls_input = np.array(cls_input)
+cls = 1.0e6 * np.array(cls) # mK^2
+cls_input = 1.0e6 * np.array(cls_input)
 res = cls_input - cls # residual
 factor = ls * (ls+1) / (2*np.pi)
 
@@ -128,10 +129,12 @@ plt.figure()
 plt.plot(ls, cls_input, label='input')
 plt.plot(ls, cls, label='recovered')
 plt.plot(ls, res, label='residual')
-plt.xlabel('$l$')
-plt.ylabel('$C_l$')
+plt.xlabel('$l$', fontsize=14)
+plt.ylabel('$C_l$ [mK${}^2$]', fontsize=14)
 plt.legend(loc='best')
-plt.ylim(0, 1.2e-11)
+if nside == 512:
+    plt.xlim(0, 1000)
+plt.ylim(0, 1.2e-5)
 plt.savefig(out_dir + 'cl_spca.png')
 plt.close()
 
@@ -141,9 +144,11 @@ plt.figure()
 plt.plot(ls, factor*cls_input, label='input')
 plt.plot(ls, factor*cls, label='recovered')
 plt.plot(ls, factor*res, label='residual')
-plt.xlabel('$l$')
-plt.ylabel('$l (l + 1) C_l / 2 \pi$')
+plt.xlabel('$l$', fontsize=14)
+plt.ylabel('$l (l + 1) C_l / 2 \pi$ [mK${}^2$]', fontsize=14)
 plt.legend(loc='best')
-plt.ylim(0, 2.0e-8)
+if nside == 512:
+    plt.xlim(0, 1000)
+plt.ylim(0, 2.0e-2)
 plt.savefig(out_dir + 'cl_norm_spca.png')
 plt.close()

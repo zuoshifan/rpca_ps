@@ -1,11 +1,8 @@
 import os
 from collections import defaultdict
 import numpy as np
-from numpy.linalg import matrix_rank
 import h5py
 from astropy.cosmology import Planck13 as cosmo
-from rpca import ialm
-from ndft import ndft, ndift
 import config
 
 import matplotlib
@@ -87,10 +84,10 @@ for yi in range(ny):
         kpmodes[bi-1].append((yi, xi))
 
 
-Pk3 = (cmk3 * cmk3.conj()).real # K, the true Pk(kz, ky, kx) for comparison
-Pk2 = np.zeros((kpbin, nf)) # K, to save true Pk(k_perp, k_para)
-Pkk = np.zeros((kpbin, nf, nf)) # K, to save all Pkk
-Pkkd = np.zeros((kpbin, nf)) # K, to save diagonal of all Pkk
+Pk3 = (cmk3 * cmk3.conj()).real # K^2, the true Pk(kz, ky, kx) for comparison
+Pk2 = np.zeros((kpbin, nf)) # K^2, to save true Pk(k_perp, k_para)
+Pkk = np.zeros((kpbin, nf, nf)) # K^2, to save all Pkk
+Pkkd = np.zeros((kpbin, nf)) # K^2, to save diagonal of all Pkk
 for bi in range(kpbin):
     # print bi, len(kpmodes[bi])
     Tk2 = np.zeros((nf, len(kpmodes[bi])), dtype=cmk2.dtype)
@@ -156,16 +153,16 @@ assert np.allclose(Pkkd, Pk2)
 # plot Pkkd and Pk2
 plt.figure()
 plt.subplot(121)
-# times 1000 to mK
+# times 1.0e6 to mK^2
 # plt.imshow(1000 * Pkkd.T, origin='lower', aspect='auto', vmax=100)
-im = 1000 * Pkkd.T[nf/2:, :] # mK
+im = 1.0e6 * Pkkd.T[nf/2:, :] # mK^2
 m, n = im.shape
-plt.pcolormesh(im, vmax=100)
+plt.pcolormesh(im, vmax=100000)
 plt.xlim(0, n)
 plt.ylim(0, m)
 plt.colorbar()
 plt.subplot(122)
-plt.imshow(im, origin='lower', aspect='auto', interpolation='nearest', vmax=100)
+plt.imshow(im, origin='lower', aspect='auto', interpolation='nearest', vmax=100000)
 plt.colorbar()
 plt.savefig(out_dir + 'Pkkd.png')
 plt.close()
@@ -188,7 +185,7 @@ for yi in range(kpbin): # for perp
         kmodes[bi].append((yi, xi))
 
 
-Pk = np.zeros((kbin,)) # K, to save all Pk
+Pk = np.zeros((kbin,)) # K^2, to save all Pk
 for bi in range(kbin):
     # print bi, len(kmodes[bi])
     for i, (yi, xi) in enumerate(kmodes[bi]):
@@ -197,9 +194,9 @@ for bi in range(kbin):
 
 # plog Pk
 plt.figure()
-plt.loglog(ks, 1000 * ks**3 * Pk / (2 * np.pi**2))
-plt.xlabel(r'$k \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$\Delta (k)^2 \ (\rm{mK})$')
+plt.loglog(ks, 1.0e6 * ks**3 * Pk / (2 * np.pi**2))
+plt.xlabel(r'$k \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$\Delta(k)^2 \ [\rm{mK}^2]$', fontsize=14)
 plt.savefig(out_dir + 'Pk.png')
 plt.close()
 
@@ -221,10 +218,10 @@ for bi in range(kbin):
 # check Pk and Pk_input
 # plog Pk and Pk_input
 plt.figure()
-plt.loglog(ks, 1000 * ks**3 * Pk / (2 * np.pi**2), label='Pk')
-plt.loglog(ks, 1000 * ks**3 * Pk_input / (2 * np.pi**2), label='Pk_input')
-plt.xlabel(r'$k \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$\Delta (k)^2 \ (\rm{mK})$')
+plt.loglog(ks, 1.0e6 * ks**3 * Pk / (2 * np.pi**2), label='Pk')
+plt.loglog(ks, 1.0e6 * ks**3 * Pk_input / (2 * np.pi**2), label='Pk_input')
+plt.xlabel(r'$k \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$\Delta(k)^2 \ [\rm{mK}^2]$', fontsize=14)
 plt.legend()
 plt.savefig(out_dir + 'Pk_check.png')
 plt.close()

@@ -8,7 +8,6 @@ import h5py
 from astropy.cosmology import Planck13 as cosmo
 from rpca import ialm
 from spca import decompose
-from ndft import ndft, ndift
 import config
 
 import matplotlib
@@ -73,8 +72,8 @@ kxs = np.zeros((nf, nx)) # h Mpc^-1
 kys = np.zeros((nf, ny)) # h Mpc^-1
 for fi, z in enumerate(zs):
     # 2D inverse Fourier transform for each z
-    mapk2[fi] = np.fft.fftshift((nx * ny) * np.fft.ifft2(ps[fi]+ga[fi]+cm[fi]))
-    cmk2[fi] = np.fft.fftshift((nx * ny) * np.fft.ifft2(cm[fi]))
+    mapk2[fi] = np.fft.fftshift((nx * ny) * np.fft.ifft2(ps[fi]+ga[fi]+cm[fi])) # (h^-1 Mpc)^2 K
+    cmk2[fi] = np.fft.fftshift((nx * ny) * np.fft.ifft2(cm[fi])) # (h^-1 Mpc)^2 K
     # compute kx, ky
     lon_mpc = 1.0e-3 * cosmo.kpc_proper_per_arcmin(z) * (lonra[1] - lonra[0]) * 60
     lon_mpch = lon_mpc / cosmo.h # Mpc / h
@@ -87,13 +86,13 @@ for fi, z in enumerate(zs):
 kxs = kxs[nf/2]
 kys = kys[nf/2]
 
-factor = 0.5
+factor = 0.4
 kpbin = int(factor * np.sqrt((ny/2.0)**2 + (nx/2.0)**2)) # bin for k_perp
 print 'kpbin:', kpbin
 # only use the central freq ks to bin
 k_bins = np.linspace(0, (kpbin+2)/(kpbin+1)*np.sqrt(kxs[0]**2 + kys[0]**2), kpbin+1)
 k_perps = np.array([ (k_bins[i] + k_bins[i+1])/2 for i in range(kpbin) ])
-# print k_perps
+print 'k_perps:', k_perps
 # get the corresponds kx, ky in each bin
 kpmodes = defaultdict(list)
 for yi in range(ny):
@@ -106,10 +105,10 @@ for yi in range(ny):
         kpmodes[bi-1].append((yi, xi))
 
 
-Pkk_input = np.zeros((kpbin, nf, nf)) # K, to save all Pkk of input cm
-Pkkd_input = np.zeros((kpbin, nf)) # K, to save diagonal of all Pkk of input cm
-Pkk = np.zeros((kpbin, nf, nf)) # K, to save all Pkk of the extracted cm
-Pkkd = np.zeros((kpbin, nf)) # K, to save diagonal of all Pkk of the extracted cm
+Pkk_input = np.zeros((kpbin, nf, nf)) # K^2, to save all Pkk of input cm
+Pkkd_input = np.zeros((kpbin, nf)) # K^2, to save diagonal of all Pkk of input cm
+Pkk = np.zeros((kpbin, nf, nf)) # K^2, to save all Pkk of the extracted cm
+Pkkd = np.zeros((kpbin, nf)) # K^2, to save diagonal of all Pkk of the extracted cm
 for bi in range(kpbin):
     nkp = len(kpmodes[bi])
     # print bi, nkp
@@ -120,8 +119,8 @@ for bi in range(kpbin):
         cmkp2[:, i] = cmk2[:, yi, xi]
 
     # compute freq covariance matrix of this bin
-    map_corr = np.dot(mapkp2, mapkp2.T.conj()) / nkp
-    cm_corr = np.dot(cmkp2, cmkp2.T.conj()) / nkp
+    map_corr = np.dot(mapkp2, mapkp2.T.conj()) / nkp # (h^-1 Mpc)^4 K^2
+    cm_corr = np.dot(cmkp2, cmkp2.T.conj()) / nkp # (h^-1 Mpc)^4 K^2
 
 
     # # plot map_corr and cm_corr
@@ -157,6 +156,7 @@ for bi in range(kpbin):
         rank = 7
     rank += 1
     L, S = decompose(map_corr.real, rank=rank, tol=1.0e-14)
+    # L, S = decompose(map_corr.real, rank=rank, tol=1.0e-6, debug=True)
 
     # if nkp <= 5:
     #     L, S = decompose(map_corr.real, rank=nkp, tol=1.0e-14)
@@ -195,37 +195,37 @@ for bi in range(kpbin):
     # cmf = np.fft.fftshift(np.fft.fft(np.fft.fftshift(nf * np.fft.ifft(cm_corr, axis=0), axes=0), axis=1), axes=1)
     cmf = np.fft.fftshift(np.fft.fft(np.fft.fftshift(nf * np.fft.ifft(cm_corr.real, axis=0), axes=0), axis=1), axes=1)
 
-    Pkk[bi] = Sf.real
-    Pkkd[bi] = np.diag(Sf.real)
-    Pkk_input[bi] = cmf.real
-    Pkkd_input[bi] = np.diag(cmf.real)
+    Pkk[bi] = Sf.real # (h^-1 Mpc)^3 K^2
+    Pkkd[bi] = np.diag(Sf.real) # (h^-1 Mpc)^3 K^2
+    Pkk_input[bi] = cmf.real # (h^-1 Mpc)^3 K^2
+    Pkkd_input[bi] = np.diag(cmf.real) # (h^-1 Mpc)^3 K^2
 
 extent = [k_perps[0], k_perps[-1], k_paras[0], k_paras[-1]]
 # plot Pkkd and Pkkd_input
 plt.figure()
 plt.subplot(121)
-# times 1000 to mK
-im = 1000 * Pkkd_input.T[nf/2:, :] # mK
-plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
-plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+# times 1.0e6 to mK^2
+im = 1.0e6 * Pkkd_input.T[nf/2:, :] # mK^2 (h^-1 Mpc)^3
+plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100000)
+plt.xlabel(r'$k_\perp \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$k_\parallel \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
 plt.colorbar()
 plt.subplot(122)
-im1 = 1000 * Pkkd.T[nf/2:, :] # mK
-plt.imshow(im1, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
-plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+im1 = 1.0e6 * Pkkd.T[nf/2:, :] # mK^2 (h^-1 Mpc)^3
+plt.imshow(im1, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmin=0, vmax=100000)
+plt.xlabel(r'$k_\perp \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$k_\parallel \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
 plt.colorbar()
 plt.savefig(out_dir + 'Pkkd_decomp.png')
 plt.close()
 
 # plot Pkkd only
 plt.figure()
-# times 1000 to mK
-im = 1000 * Pkkd.T[nf/2:, :] # mK
-plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmax=100)
-plt.xlabel(r'$k_\perp \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$k_\parallel \ (h \, \rm{Mpc}^{-1})$')
+# times 1.0e6 to mK^2
+im = 1.0e6 * Pkkd.T[nf/2:, :] # mK^2 (h^-1 Mpc)^3
+plt.imshow(im, origin='lower', aspect='auto', extent=extent, interpolation='nearest', vmin=0, vmax=100000)
+plt.xlabel(r'$k_\perp \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$k_\parallel \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
 plt.colorbar()
 plt.savefig(out_dir + 'Pk2d_decomp.png')
 plt.close()
@@ -248,8 +248,8 @@ for yi in range(kpbin): # for perp
         kmodes[bi].append((yi, xi))
 
 
-Pk_input = np.zeros((kbin,)) # K, to save all Pk of the input cm
-Pk = np.zeros((kbin,)) # K, to save all Pk of the extracted cm
+Pk_input = np.zeros((kbin,)) # K^2 (h^-1 Mpc)^3, to save all Pk of the input cm
+Pk = np.zeros((kbin,)) # K^2 (h^-1 Mpc)^3, to save all Pk of the extracted cm
 for bi in range(kbin):
     # print bi, len(kmodes[bi])
     for i, (yi, xi) in enumerate(kmodes[bi]):
@@ -262,12 +262,12 @@ for bi in range(kbin):
         Pk[bi] /= len(kmodes[bi])
         Pk_input[bi] /= len(kmodes[bi])
 
-# plog Pk
+# plot Pk
 plt.figure()
-plt.loglog(ks, 1000 * ks**3 * Pk_input / (2 * np.pi**2), label='input')
-plt.loglog(ks, 1000 * ks**3 * Pk / (2 * np.pi**2), label='recovered')
+plt.loglog(ks, 1.0e6 * ks**3 * Pk_input / (2 * np.pi**2), label='input')
+plt.loglog(ks, 1.0e6 * ks**3 * Pk / (2 * np.pi**2), label='recovered')
 plt.legend()
-plt.xlabel(r'$k \ (h \, \rm{Mpc}^{-1})$')
-plt.ylabel(r'$\Delta^2 (k) \ (\rm{mK})$')
+plt.xlabel(r'$k \ [h \, \rm{Mpc}^{-1}]$', fontsize=14)
+plt.ylabel(r'$\Delta^2(k) \ [\rm{mK}^2]$', fontsize=14)
 plt.savefig(out_dir + 'Pk_decomp.png')
 plt.close()

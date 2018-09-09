@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 
 # generate beam convolved sky maps
-# python convolve_beam.py
+python convolve_beam.py
 
 # crop to get a flat sky area
-# python crop_map.py
+python crop_map.py
 
 # plot flat skys
-# python plot_flat.py
+python plot_flat.py
 
 # Fourier transform the flat sky areas
 python check_flat.py
 python fourier_flat.py
+
+# spherical harmonic transform to get alm
+python gen_alm.py
 
 # compute cl for full sky maps
 python cl.py
